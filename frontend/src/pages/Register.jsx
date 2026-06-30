@@ -1,7 +1,11 @@
 import { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Register() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,6 +15,8 @@ function Register() {
     department: "",
     year: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     setFormData({
@@ -21,12 +27,17 @@ function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/register", formData);
-      alert(res.data.message);
-    } catch (error) {
-      alert(error.response?.data?.message || "Registration failed");
+      const data = await register(formData);
+      alert(data.message);
+      navigate("/login");
+    } catch (err) {
+      setError(err.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,16 +45,25 @@ function Register() {
     <div>
       <h1>Register</h1>
 
+      {error && <p>{error}</p>}
+
       <form onSubmit={handleRegister}>
         <input name="name" placeholder="Name" onChange={handleChange} />
         <input name="email" placeholder="Email" onChange={handleChange} />
-        <input name="password" placeholder="Password" type="password" onChange={handleChange} />
+        <input
+          name="password"
+          placeholder="Password"
+          type="password"
+          onChange={handleChange}
+        />
         <input name="phone" placeholder="Phone" onChange={handleChange} />
         <input name="college" placeholder="College" onChange={handleChange} />
         <input name="department" placeholder="Department" onChange={handleChange} />
         <input name="year" placeholder="Year" onChange={handleChange} />
 
-        <button type="submit">Register</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Registering..." : "Register"}
+        </button>
       </form>
     </div>
   );

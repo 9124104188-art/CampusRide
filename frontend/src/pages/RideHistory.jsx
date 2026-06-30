@@ -1,32 +1,30 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
-import axios from "axios";
-import Navbar from "../components/Navbar";
+import api from "../api/axios";
+import Navbar from "../components/NavBar";
 
 function RideHistory() {
   const [rides, setRides] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const fetchHistory = async () => {
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      setLoading(true);
+      setError("");
 
-    const res = await axios.get(
-      "http://localhost:5000/api/rides/history",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      const res = await api.get("/rides/history");
+      setRides(res.data.data.rides);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch ride history");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    setRides(res.data.rides);
-  } catch (error) {
-    alert(error.response?.data?.message || "Failed to fetch ride history");
-  }
-};
-
-useEffect(() => {
-  fetchHistory();
-}, []);
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
   return (
     <>
@@ -34,19 +32,27 @@ useEffect(() => {
 
       <div className="page">
         <h1>Ride History</h1>
-        {rides.length === 0 && <p>No ride history found.</p>}
 
-{rides.map((ride) => (
-  <div className="card" key={ride._id}>
-    <h3>{ride.pickup} → {ride.destination}</h3>
+        {loading && <p>Loading history...</p>}
+        {error && <p>{error}</p>}
 
-    <p>Departure: {ride.departureTime}</p>
-    <p>Vehicle: {ride.vehicleDetails}</p>
-    <p>Fare: ₹{ride.farePerStudent}</p>
-    <p>Status: {ride.status}</p>
-    <p>Seats Filled: {ride.riders.length}/{ride.maxSeats}</p>
-  </div>
-))}
+        {rides.length === 0 && !loading && <p>No ride history found.</p>}
+
+        {rides.map((ride) => (
+          <div className="card" key={ride._id}>
+            <h3>
+              {ride.pickup} → {ride.destination}
+            </h3>
+
+            <p>Departure: {ride.departureTime}</p>
+            <p>Vehicle: {ride.vehicleDetails}</p>
+            <p>Fare: ₹{ride.farePerStudent}</p>
+            <p>Status: {ride.status}</p>
+            <p>
+              Seats Filled: {ride.riders.length}/{ride.maxSeats}
+            </p>
+          </div>
+        ))}
       </div>
     </>
   );
