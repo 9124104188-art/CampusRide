@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 import EmptyState from "../components/EmptyState";
 import LoadingSpinner from "../components/LoadingSpinner";
+import RideRouteInfo from "../components/RideRouteInfo";
 import Navbar from "../components/NavBar";
 
 function RideHistory() {
@@ -62,6 +63,8 @@ function RideHistory() {
 
             <p className="card-meta">Vehicle: {ride.vehicleDetails}</p>
             <p className="card-meta">Fare: ₹{ride.farePerStudent}</p>
+
+            <RideRouteInfo ride={ride} />
 
             <div className="seat-meter" aria-label={`Seats filled ${ride.riders.length} of ${ride.maxSeats}`}>
               <div className="seat-meter-row">

@@ -25,6 +25,46 @@ const rideSchema = new mongoose.Schema(
       required: true,
     },
 
+    pickupLatLng: {
+      lat: {
+        type: Number,
+      },
+      lng: {
+        type: Number,
+      },
+    },
+
+    destinationLatLng: {
+      lat: {
+        type: Number,
+      },
+      lng: {
+        type: Number,
+      },
+    },
+
+    distance: {
+      text: {
+        type: String,
+        default: "",
+      },
+      value: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    duration: {
+      text: {
+        type: String,
+        default: "",
+      },
+      value: {
+        type: Number,
+        default: 0,
+      },
+    },
+
     departureTime: {
       type: String,
       required: true,

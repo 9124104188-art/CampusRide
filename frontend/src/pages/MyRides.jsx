@@ -5,6 +5,7 @@ import EmptyState from "../components/EmptyState";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Navbar from "../components/NavBar";
 import ConfirmationModal from "../components/ConfirmationModal";
+import RideRouteInfo from "../components/RideRouteInfo";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/useToast";
 import { useNavigate } from "react-router-dom";
@@ -128,6 +129,8 @@ function MyRides() {
             </div>
 
             <p className="card-meta">Vehicle: {ride.vehicleDetails}</p>
+
+            <RideRouteInfo ride={ride} />
 
             <div className="seat-meter" aria-label={`Seats filled ${ride.riders.length} of ${ride.maxSeats}`}>
               <div className="seat-meter-row">

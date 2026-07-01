@@ -1,13 +1,19 @@
 import { useState } from "react";
 import api from "../api/axios";
+import GoogleMapsRidePicker from "../components/GoogleMapsRidePicker";
 import Navbar from "../components/NavBar";
 import { useToast } from "../context/useToast";
 
 function CreateRide() {
   const { showToast } = useToast();
+  const [pickerResetKey, setPickerResetKey] = useState(0);
   const [formData, setFormData] = useState({
     pickup: "",
     destination: "",
+    pickupLatLng: null,
+    destinationLatLng: null,
+    distance: "",
+    duration: "",
     departureTime: "",
     vehicleDetails: "",
     maxSeats: "",
@@ -23,6 +29,13 @@ function CreateRide() {
     });
   };
 
+  const handleRouteChange = (updates) => {
+    setFormData((current) => ({
+      ...current,
+      ...updates,
+    }));
+  };
+
   const handleCreateRide = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -35,11 +48,16 @@ function CreateRide() {
       setFormData({
         pickup: "",
         destination: "",
+        pickupLatLng: null,
+        destinationLatLng: null,
+        distance: "",
+        duration: "",
         departureTime: "",
         vehicleDetails: "",
         maxSeats: "",
         farePerStudent: "",
       });
+      setPickerResetKey((current) => current + 1);
     } catch (err) {
       const message = err.response?.data?.message || "Failed to create ride";
       setError(message);
@@ -61,18 +79,12 @@ function CreateRide() {
       {error && <p>{error}</p>}
 
       <form className="ride-form" onSubmit={handleCreateRide}>
-        <label className="field">
-          <span>Pickup</span>
-          <input name="pickup" placeholder="Pickup location" onChange={handleChange} />
-        </label>
-        <label className="field">
-          <span>Destination</span>
-          <input
-            name="destination"
-            placeholder="Destination location"
-            onChange={handleChange}
-          />
-        </label>
+        <GoogleMapsRidePicker
+          key={pickerResetKey}
+          value={formData}
+          onChange={handleRouteChange}
+        />
+
         <label className="field">
           <span>Departure Time</span>
           <input
