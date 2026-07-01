@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Link } from "react-router-dom";
 import Navbar from "../components/NavBar";
+import EmptyState from "../components/EmptyState";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -55,30 +57,39 @@ function Dashboard() {
         <h2>Welcome {user?.name}</h2>
         <p>Email: {user?.email}</p>
 
-        {loading && <p>Loading stats...</p>}
+        {loading && <LoadingSpinner label="Loading dashboard stats..." />}
         {error && <p>{error}</p>}
 
-        <div className="stats-grid">
-          <div className="stat-card">
-            <h3>{stats.available}</h3>
-            <p>Available Rides</p>
-          </div>
+        {!loading && !error && Object.values(stats).every((count) => count === 0) && (
+          <EmptyState
+            title="No rides yet"
+            description="Once you create, join, or complete rides, your dashboard summary will appear here."
+          />
+        )}
 
-          <div className="stat-card">
-            <h3>{stats.myRides}</h3>
-            <p>My Rides</p>
-          </div>
+        {!loading && !error && (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>{stats.available}</h3>
+              <p>Available Rides</p>
+            </div>
 
-          <div className="stat-card">
-            <h3>{stats.created}</h3>
-            <p>Created Rides</p>
-          </div>
+            <div className="stat-card">
+              <h3>{stats.myRides}</h3>
+              <p>My Rides</p>
+            </div>
 
-          <div className="stat-card">
-            <h3>{stats.history}</h3>
-            <p>Ride History</p>
+            <div className="stat-card">
+              <h3>{stats.created}</h3>
+              <p>Created Rides</p>
+            </div>
+
+            <div className="stat-card">
+              <h3>{stats.history}</h3>
+              <p>Ride History</p>
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="dashboard-grid">
           <Link className="dashboard-card" to="/create-ride">

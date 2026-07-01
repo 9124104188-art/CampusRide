@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { useToast } from "../context/useToast";
 
 function Login() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -26,26 +28,35 @@ function Login() {
       localStorage.setItem("token", res.data.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.data.user));
 
-      alert(res.data.message);
+      showToast(res.data.message, "success");
       navigate("/dashboard");
     } catch (error) {
-      alert(error.response?.data?.message || "Login failed");
+      showToast(error.response?.data?.message || "Login failed", "error");
     }
   };
 
   return (
-    <div className="page">
-      <h1>Login</h1>
+    <div className="page auth-page">
+      <div className="page-header">
+        <h1>Login</h1>
+        <p>Welcome back. Sign in to manage your rides.</p>
+      </div>
 
-      <form onSubmit={handleLogin}>
-        <input name="email" placeholder="Email" onChange={handleChange} />
-        <input
-          name="password"
-          placeholder="Password"
-          type="password"
-          onChange={handleChange}
-        />
-        <button type="submit">Login</button>
+      <form className="auth-form" onSubmit={handleLogin}>
+        <label className="field">
+          <span>Email</span>
+          <input name="email" placeholder="Enter your email" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>Password</span>
+          <input
+            name="password"
+            placeholder="Enter your password"
+            type="password"
+            onChange={handleChange}
+          />
+        </label>
+        <button type="submit" className="primary-btn">Login</button>
       </form>
     </div>
   );

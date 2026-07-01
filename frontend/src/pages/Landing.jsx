@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 function Landing() {
   return (
     <div className="landing">
-      <div className="landing-content">
+      <div className="landing-content hero-panel">
         <h1>Your Campus. Your Ride.</h1>
         <p>A safe and smart ride sharing platform for college students.</p>
 
-        <div>
+        <div className="landing-actions">
           <Link to="/login">
             <button>Login</button>
           </Link>

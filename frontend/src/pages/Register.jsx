@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/useToast";
 
 function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,36 +34,62 @@ function Register() {
 
     try {
       const data = await register(formData);
-      alert(data.message);
+      showToast(data.message, "success");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      const message = err.response?.data?.message || "Registration failed";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>Register</h1>
+    <div className="page auth-page">
+      <div className="page-header">
+        <h1>Register</h1>
+        <p>Create your student profile to start sharing rides.</p>
+      </div>
 
       {error && <p>{error}</p>}
 
-      <form onSubmit={handleRegister}>
-        <input name="name" placeholder="Name" onChange={handleChange} />
-        <input name="email" placeholder="Email" onChange={handleChange} />
-        <input
-          name="password"
-          placeholder="Password"
-          type="password"
-          onChange={handleChange}
-        />
-        <input name="phone" placeholder="Phone" onChange={handleChange} />
-        <input name="college" placeholder="College" onChange={handleChange} />
-        <input name="department" placeholder="Department" onChange={handleChange} />
-        <input name="year" placeholder="Year" onChange={handleChange} />
+      <form className="auth-form" onSubmit={handleRegister}>
+        <label className="field">
+          <span>Name</span>
+          <input name="name" placeholder="Your full name" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>Email</span>
+          <input name="email" placeholder="Your college email" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>Password</span>
+          <input
+            name="password"
+            placeholder="Create a password"
+            type="password"
+            onChange={handleChange}
+          />
+        </label>
+        <label className="field">
+          <span>Phone</span>
+          <input name="phone" placeholder="Your phone number" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>College</span>
+          <input name="college" placeholder="College name" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>Department</span>
+          <input name="department" placeholder="Department name" onChange={handleChange} />
+        </label>
+        <label className="field">
+          <span>Year</span>
+          <input name="year" placeholder="1 - 5" onChange={handleChange} />
+        </label>
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" className="primary-btn" disabled={loading}>
           {loading ? "Registering..." : "Register"}
         </button>
       </form>

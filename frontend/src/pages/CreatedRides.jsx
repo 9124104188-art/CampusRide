@@ -1,9 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import EmptyState from "../components/EmptyState";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ConfirmationModal from "../components/ConfirmationModal";
 import Navbar from "../components/NavBar";
+import { useToast } from "../context/useToast";
 
 function CreatedRides() {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const [editingRideId, setEditingRideId] = useState(null);
   const [editData, setEditData] = useState({
     pickup: "",
@@ -16,6 +23,9 @@ function CreatedRides() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pendingRideAction, setPendingRideAction] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchCreatedRides = async () => {
     try {
@@ -52,54 +62,89 @@ function CreatedRides() {
 
   const handleUpdateRide = async (rideId) => {
     try {
+      setActionLoading(true);
       const res = await api.put(`/rides/${rideId}`, editData);
-      alert(res.data.message);
+      showToast(res.data.message, "success");
       setEditingRideId(null);
-      fetchCreatedRides();
+      await fetchCreatedRides();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update ride");
+      showToast(err.response?.data?.message || "Failed to update ride", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleDeleteRide = async (rideId) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this ride?"
-    );
-
-    if (!confirmDelete) {
-      return;
-    }
-
     try {
+      setActionLoading(true);
       const res = await api.delete(`/rides/${rideId}`);
-      alert(res.data.message);
+      showToast(res.data.message, "success");
       setRides(rides.filter((ride) => ride._id !== rideId));
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete ride");
+      showToast(err.response?.data?.message || "Failed to delete ride", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleStatusChange = async (rideId, status) => {
-    const confirmStatus = window.confirm(
-      `Are you sure you want to mark this ride as ${status}?`
-    );
-
-    if (!confirmStatus) {
-      return;
-    }
-
     try {
+      setActionLoading(true);
       const res = await api.put(`/rides/${rideId}/status`, { status });
-      alert(res.data.message);
-      fetchCreatedRides();
+      showToast(res.data.message, "success");
+      await fetchCreatedRides();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update status");
+      showToast(err.response?.data?.message || "Failed to update status", "error");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCreatedRides();
   }, []);
+
+  const closeRideModal = () => {
+    if (confirmLoading) {
+      return;
+    }
+
+    setPendingRideAction(null);
+  };
+
+  const confirmRideAction = async () => {
+    if (!pendingRideAction) {
+      return;
+    }
+
+    try {
+      setConfirmLoading(true);
+      await pendingRideAction.onConfirm();
+      setPendingRideAction(null);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const openDeleteModal = (ride) => {
+    setPendingRideAction({
+      title: "Delete ride?",
+      message: `This will permanently remove ${ride.pickup} → ${ride.destination} from your created rides.`,
+      confirmLabel: "Delete Ride",
+      onConfirm: () => handleDeleteRide(ride._id),
+    });
+  };
+
+  const openStatusModal = (ride, status) => {
+    const nextStatusLabel = status === "started" ? "start" : "complete";
+
+    setPendingRideAction({
+      title: `Mark ride as ${nextStatusLabel}?`,
+      message: `This will mark ${ride.pickup} → ${ride.destination} as ${status}.`,
+      confirmLabel: `Mark as ${status}`,
+      onConfirm: () => handleStatusChange(ride._id, status),
+    });
+  };
 
   return (
     <>
@@ -108,25 +153,65 @@ function CreatedRides() {
       <div className="page">
         <h1>Created Rides</h1>
 
-        {loading && <p>Loading rides...</p>}
+        {loading && <LoadingSpinner label="Loading created rides..." />}
         {error && <p>{error}</p>}
 
         {rides.length === 0 && !loading && (
-          <p>You have not created any rides yet.</p>
+          <EmptyState
+            title="No created rides yet"
+            description="Create your first ride to start receiving passengers from campus."
+            action={
+              <button type="button" onClick={() => navigate("/create-ride")}>
+                Create Ride
+              </button>
+            }
+          />
         )}
 
         {rides.map((ride) => (
           <div className="card" key={ride._id}>
-            <h3>
-              {ride.pickup} → {ride.destination}
-            </h3>
-            <p>Departure: {ride.departureTime}</p>
-            <p>Vehicle: {ride.vehicleDetails}</p>
-            <p>Fare: ₹{ride.farePerStudent}</p>
-            <p>Status: {ride.status}</p>
-            <p>
-              Seats Filled: {ride.riders.length}/{ride.maxSeats}
-            </p>
+            <div className="card-top">
+              <div>
+                <h3>
+                  {ride.pickup} → {ride.destination}
+                </h3>
+                <p className="card-subtitle">Departing at {ride.departureTime}</p>
+              </div>
+
+              <span className={`status-badge status-${ride.status}`}>
+                {ride.status}
+              </span>
+            </div>
+
+            <p className="card-meta">Vehicle: {ride.vehicleDetails}</p>
+            <p className="card-meta">Fare: ₹{ride.farePerStudent}</p>
+
+            <div className="seat-meter" aria-label={`Seats filled ${ride.riders.length} of ${ride.maxSeats}`}>
+              <div className="seat-meter-row">
+                <span>Seats filled</span>
+                <strong>{ride.riders.length}/{ride.maxSeats}</strong>
+              </div>
+              <div className="seat-meter-track">
+                <div
+                  className="seat-meter-fill"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, ride.riders.length / ride.maxSeats * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            {ride.status === "started" && (
+              <p className="card-helper-text">
+                This ride has started. Editing is locked.
+              </p>
+            )}
+
+            {ride.status === "completed" && (
+              <p className="card-helper-text">
+                This ride is completed and can no longer be edited or deleted.
+              </p>
+            )}
 
             <h4>Joined Students</h4>
 
@@ -181,14 +266,20 @@ function CreatedRides() {
                   onChange={handleEditChange}
                 />
 
-                <button onClick={() => handleUpdateRide(ride._id)}>Save</button>
-                <button onClick={() => setEditingRideId(null)}>Cancel</button>
+                <button onClick={() => handleUpdateRide(ride._id)} disabled={actionLoading || confirmLoading}>
+                  {actionLoading ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => setEditingRideId(null)} disabled={actionLoading || confirmLoading}>
+                  Cancel
+                </button>
               </div>
             ) : (
-              ride.status !== "completed" && (
+              !["started", "completed"].includes(ride.status) && (
                 <>
-                  <button onClick={() => startEdit(ride)}>Edit Ride</button>
-                  <button onClick={() => handleDeleteRide(ride._id)}>
+                  <button className="secondary-btn" onClick={() => startEdit(ride)} disabled={actionLoading || confirmLoading}>
+                    Edit Ride
+                  </button>
+                  <button className="danger-btn" onClick={() => openDeleteModal(ride)} disabled={actionLoading || confirmLoading}>
                     Delete Ride
                   </button>
                 </>
@@ -196,20 +287,29 @@ function CreatedRides() {
             )}
 
             {ride.status === "available" && (
-              <button onClick={() => handleStatusChange(ride._id, "started")}>
+              <button className="primary-btn" onClick={() => openStatusModal(ride, "started")} disabled={actionLoading || confirmLoading}>
                 Start Ride
               </button>
             )}
 
             {ride.status === "started" && (
-              <button
-                onClick={() => handleStatusChange(ride._id, "completed")}
-              >
+              <button className="primary-btn" onClick={() => openStatusModal(ride, "completed")} disabled={actionLoading || confirmLoading}>
                 Complete Ride
               </button>
             )}
           </div>
         ))}
+
+      <ConfirmationModal
+        isOpen={Boolean(pendingRideAction)}
+        title={pendingRideAction?.title || "Confirm action"}
+        message={pendingRideAction?.message || "Are you sure you want to continue?"}
+        confirmLabel={pendingRideAction?.confirmLabel || "Confirm"}
+        cancelLabel="Cancel"
+        loading={confirmLoading}
+        onConfirm={confirmRideAction}
+        onCancel={closeRideModal}
+      />
       </div>
     </>
   );

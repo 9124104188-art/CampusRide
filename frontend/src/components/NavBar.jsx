@@ -12,7 +12,9 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-      <h2>CampusRide</h2>
+      <Link className="brand" to="/dashboard">
+        CampusRide
+      </Link>
 
       <div className="nav-links">
         <Link to="/dashboard">Dashboard</Link>

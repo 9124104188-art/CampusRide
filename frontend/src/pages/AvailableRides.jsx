@@ -1,15 +1,20 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import EmptyState from "../components/EmptyState";
+import LoadingSpinner from "../components/LoadingSpinner";
 import Navbar from "../components/NavBar";
+import { useToast } from "../context/useToast";
 
 function AvailableRides() {
+  const { showToast } = useToast();
   const [rides, setRides] = useState([]);
   const [pickupSearch, setPickupSearch] = useState("");
   const [destinationSearch, setDestinationSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [joiningRideId, setJoiningRideId] = useState(null);
 
   const fetchRides = async () => {
     try {
@@ -27,11 +32,14 @@ function AvailableRides() {
 
   const handleJoinRide = async (rideId) => {
     try {
+      setJoiningRideId(rideId);
       const res = await api.post(`/rides/${rideId}/join`);
-      alert(res.data.message);
-      fetchRides();
+      showToast(res.data.message, "success");
+      await fetchRides();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to join ride");
+      showToast(err.response?.data?.message || "Failed to join ride", "error");
+    } finally {
+      setJoiningRideId(null);
     }
   };
 
@@ -61,7 +69,7 @@ function AvailableRides() {
       <div className="page">
         <h1>Available Rides</h1>
 
-        {loading && <p>Loading rides...</p>}
+        {loading && <LoadingSpinner label="Loading available rides..." />}
         {error && <p>{error}</p>}
 
         <div className="search-box">
@@ -86,18 +94,53 @@ function AvailableRides() {
           />
         </div>
 
+        {filteredRides.length === 0 && !loading && !error && (
+          <EmptyState
+            title="No rides found"
+            description="Try adjusting your search filters or check back later for new rides."
+          />
+        )}
+
         {filteredRides.map((ride) => (
           <div className="card" key={ride._id}>
-            <h3>
-              {ride.pickup} → {ride.destination}
-            </h3>
+            <div className="card-top">
+              <div>
+                <h3>
+                  {ride.pickup} → {ride.destination}
+                </h3>
+                <p className="card-subtitle">Departing at {ride.departureTime}</p>
+              </div>
 
-            <p>Departure: {ride.departureTime}</p>
-            <p>Vehicle: {ride.vehicleDetails}</p>
-            <p>Fare: ₹{ride.farePerStudent}</p>
-            <p>Seats Left: {ride.maxSeats - ride.riders.length}</p>
+              <span className={`status-badge status-${ride.status}`}>
+                {ride.status}
+              </span>
+            </div>
 
-            <button onClick={() => handleJoinRide(ride._id)}>Join Ride</button>
+            <p className="card-meta">Vehicle: {ride.vehicleDetails}</p>
+            <p className="card-meta">Fare: ₹{ride.farePerStudent}</p>
+
+            <div className="seat-meter" aria-label={`Seats left ${ride.maxSeats - ride.riders.length} of ${ride.maxSeats}`}>
+              <div className="seat-meter-row">
+                <span>Seats available</span>
+                <strong>{ride.maxSeats - ride.riders.length}/{ride.maxSeats}</strong>
+              </div>
+              <div className="seat-meter-track">
+                <div
+                  className="seat-meter-fill"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, (ride.maxSeats - ride.riders.length) / ride.maxSeats * 100))}%`,
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              className="primary-btn"
+              onClick={() => handleJoinRide(ride._id)}
+              disabled={joiningRideId === ride._id}
+            >
+              {joiningRideId === ride._id ? "Joining..." : "Join Ride"}
+            </button>
           </div>
         ))}
       </div>

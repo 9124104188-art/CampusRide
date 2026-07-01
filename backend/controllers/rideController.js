@@ -2,6 +2,9 @@ const Ride = require("../models/Ride");
 const ApiError = require("../utils/ApiError");
 const { sendSuccess } = require("../utils/apiResponse");
 
+const isCompletedRide = (ride) => ride.status === "completed";
+const isLockedForEditing = (ride) => ["started", "completed"].includes(ride.status);
+
 const createRide = async (req, res) => {
   const {
     pickup,
@@ -43,12 +46,24 @@ const joinRide = async (req, res) => {
     throw new ApiError(404, "Ride not found");
   }
 
-  if (ride.status !== "available") {
-    throw new ApiError(400, "Ride is not available for joining");
+  if (ride.driverId.toString() === userId) {
+    throw new ApiError(400, "You cannot join your own ride");
   }
 
-  if (ride.driverId.toString() === userId) {
-    throw new ApiError(400, "Driver cannot join own ride");
+  if (ride.status === "cancelled") {
+    throw new ApiError(400, "You cannot join a cancelled ride");
+  }
+
+  if (ride.status === "completed") {
+    throw new ApiError(400, "You cannot join a completed ride");
+  }
+
+  if (ride.status === "full") {
+    throw new ApiError(400, "You cannot join a full ride");
+  }
+
+  if (ride.status !== "available") {
+    throw new ApiError(400, "Ride is not available for joining");
   }
 
   if (ride.riders.some((riderId) => riderId.toString() === userId)) {
@@ -88,6 +103,10 @@ const leaveRide = async (req, res) => {
 
   if (!ride) {
     throw new ApiError(404, "Ride not found");
+  }
+
+  if (isCompletedRide(ride)) {
+    throw new ApiError(400, "Completed rides cannot be left");
   }
 
   if (!ride.riders.some((riderId) => riderId.toString() === userId)) {
@@ -134,6 +153,10 @@ const deleteRide = async (req, res) => {
     throw new ApiError(403, "You are not allowed to delete this ride");
   }
 
+  if (isCompletedRide(ride)) {
+    throw new ApiError(400, "Completed rides cannot be deleted");
+  }
+
   await Ride.findByIdAndDelete(rideId);
 
   return sendSuccess(res, 200, "Ride deleted successfully");
@@ -151,6 +174,13 @@ const updateRide = async (req, res) => {
 
   if (ride.driverId.toString() !== userId) {
     throw new ApiError(403, "You are not allowed to update this ride");
+  }
+
+  if (isLockedForEditing(ride)) {
+    throw new ApiError(
+      400,
+      "Started and completed rides cannot be edited"
+    );
   }
 
   const allowedFields = [
