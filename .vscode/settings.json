@@ -1,6 +1,7 @@
 {
   "files.exclude": {
     "backend/.env": true,
-    "backend/.env.*": true
+    "backend/.env.*": true,
+    "screenshots": true
   }
 }
