@@ -170,7 +170,7 @@ Authorization: Bearer <your_token>
 Add screenshots of your application here.
 
 ### Login Page
-<img width="1912" height="905" alt="image" src="https://github.com/user-attachments/assets/4506f282-a0db-4d30-b235-5940e36a3f7c" />
+
 
 
 ![Login](screenshots/login.png)
