@@ -173,19 +173,19 @@ Add screenshots of your application here.
 
 
 
-![Login](screenshots/login.png)
+![Login](screenshot/login.png)
 
 ### Dashboard
 
-![Dashboard](screenshots/dashboard.png)
+![Dashboard](screenshot/dashboard.png)
 
 ### Available Rides
 
-![Available Rides](screenshots/available-rides.png)
+![Available Rides](screenshot/available-rides.png)
 
 ### Created Rides
 
-![Created Rides](screenshots/created-rides.png)
+![Created Rides](screenshot/created-rides.png)
 
 ---
 
